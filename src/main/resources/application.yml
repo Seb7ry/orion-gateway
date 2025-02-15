@@ -1,0 +1,10 @@
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:5173"  # Change this based on your frontend URL
+            allowedMethods: "*"  # Allows all HTTP methods (GET, POST, PUT, DELETE, etc.)
+            allowedHeaders: "*"  # Allows all headers
+            allowCredentials: true  # Allows credentials (cookies, authorization headers)
