@@ -1,55 +1,114 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
-    name: orion-gateway
+    name: ${GATEWAY_NAME:orion-gateway}
 
   cloud:
+    # Load Balancer Configuration
+    loadbalancer:
+      # Algoritmo de balanceo: round_robin, random, weighted_random
+      configurations:
+        default:
+          health-check:
+            enabled: true
+            interval: 30s
+
     gateway:
+      # Configuración de rutas con Load Balancing
       routes:
-        - id: user-service
-          uri: ${ORION_USER_URL:http://localhost:8092}
+        # User Management Routes con Load Balancing
+        - id: user-service-lb
+          uri: lb://orion-user  # lb:// activa el load balancer
           predicates:
             - Path=/api/users/**
           filters:
             - RewritePath=/api/users(?<segment>.*), /service/user$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: user-service-cb
+                fallbackUri: forward:/fallback/user
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT
+                backoff:
+                  firstBackoff: 100ms
+                  maxBackoff: 500ms
 
-        - id: role-service
-          uri: ${ORION_USER_URL:http://localhost:8092}
+        - id: role-service-lb
+          uri: lb://orion-user  # Roles van al mismo servicio de users
           predicates:
             - Path=/api/roles/**
           filters:
             - RewritePath=/api/roles(?<segment>.*), /service/role$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: role-service-cb
+                fallbackUri: forward:/fallback/user
 
-        - id: auth-service
-          uri: ${ORION_AUTH_URL:http://localhost:8091}
+        # Authentication Routes con Load Balancing
+        - id: auth-service-lb
+          uri: lb://orion-auth
           predicates:
             - Path=/api/auth/**
           filters:
             - RewritePath=/api/auth(?<segment>.*), /authenticate$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: auth-service-cb
+                fallbackUri: forward:/fallback/auth
+            - name: Retry
+              args:
+                retries: 2
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT
 
-        - id: program-service
-          uri: ${ORION_PROGRAM_URL:http://localhost:8093}
+        # Program Management Routes con Load Balancing
+        - id: program-service-lb
+          uri: lb://orion-program
           predicates:
             - Path=/api/programs/**
           filters:
             - RewritePath=/api/programs(?<segment>.*), /service/program$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: program-service-cb
+                fallbackUri: forward:/fallback/program
 
-        - id: document-service
-          uri: ${ORION_DOCUMENT_URL:http://localhost:8094}
+        # Document Management Routes con Load Balancing
+        - id: document-service-lb
+          uri: lb://orion-document
           predicates:
             - Path=/api/documents/**
           filters:
             - RewritePath=/api/documents(?<segment>.*), /service/document$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: document-service-cb
+                fallbackUri: forward:/fallback/document
 
-        - id: drive-service
-          uri: ${ORION_DRIVE_URL:http://localhost:8095}
+        # Drive Service Routes con Load Balancing
+        - id: drive-service-lb
+          uri: lb://orion-drive
           predicates:
             - Path=/api/drive/**
           filters:
             - RewritePath=/api/drive(?<segment>.*), /service/drive$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: drive-service-cb
+                fallbackUri: forward:/fallback/drive
 
+        # Health Check Route (sin load balancing)
+        - id: health-check
+          uri: http://localhost:8080
+          predicates:
+            - Path=/health
+          filters:
+            - SetPath=/actuator/health
+
+      # CORS Configuration
       globalcors:
         cors-configurations:
           '[/**]':
@@ -57,6 +116,7 @@ spring:
               - "http://localhost:*"
               - "http://127.0.0.1:*"
               - "https://*.vercel.app"
+              - "https://*.netlify.app"
             allowed-methods:
               - GET
               - POST
@@ -68,30 +128,71 @@ spring:
             allow-credentials: true
             max-age: 3600
 
+      # Default filters aplicados a todas las rutas
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
-        - AddResponseHeader=X-Gateway-Service, orion-gateway
+        - AddResponseHeader=X-Gateway-Service, ${GATEWAY_NAME:orion-gateway}
+        - AddResponseHeader=X-Gateway-Version, 1.0.0
+        - AddResponseHeader=X-Load-Balancer, enabled
 
+# Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+    instances:
+      user-service-cb:
+        base-config: default
+      auth-service-cb:
+        base-config: default
+      program-service-cb:
+        base-config: default
+      document-service-cb:
+        base-config: default
+      drive-service-cb:
+        base-config: default
+
+# Management & Monitoring
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,gateway,metrics
+        include: health,info,gateway,metrics,env,circuitbreakers,lb
       base-path: /actuator
   endpoint:
     health:
       show-details: always
     gateway:
       enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
 
+# Application Info
 info:
   app:
-    name: Orion Gateway
-    description: Modern Gateway for Orion Microservices
+    name: ${GATEWAY_NAME:Orion Gateway}
+    description: Load Balanced Gateway for Orion Microservices
     version: 1.0.0
+    features:
+      - Load Balancing
+      - Circuit Breaker
+      - Retry Logic
+      - Health Checks
 
+# Logging Configuration
 logging:
   level:
     org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.loadbalancer: DEBUG
     org.springframework.web.cors: DEBUG
     com.unibague.gradework: DEBUG
+    org.springframework.cloud.circuitbreaker: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"

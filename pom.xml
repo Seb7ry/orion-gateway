@@ -14,7 +14,7 @@
 	<artifactId>orion-gateway</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>orion-gateway</name>
-	<description>Modern Gateway for Orion Microservices</description>
+	<description>Modern Gateway for Orion Microservices with Load Balancing</description>
 
 	<properties>
 		<java.version>21</java.version>
@@ -22,19 +22,60 @@
 	</properties>
 
 	<dependencies>
+		<!-- Core Gateway -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-gateway</artifactId>
 		</dependency>
 
+		<!-- Load Balancer - CLAVE para balanceo de cargas -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-loadbalancer</artifactId>
+		</dependency>
+
+		<!-- Circuit Breaker para resilencia -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
+		</dependency>
+
+		<!-- Service Discovery (para múltiples instancias) -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-consul-discovery</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Monitoring y Health -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
+		<!-- Metrics para Prometheus -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+
+		<!-- Reactive Redis para caching (opcional) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Testing -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-contract-wiremock</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
