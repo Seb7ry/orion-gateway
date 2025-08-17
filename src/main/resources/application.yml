@@ -13,48 +13,42 @@ spring:
           predicates:
             - Path=/api/users/**
           filters:
-            - StripPrefix=1
-            - RewritePath=/users/(?<segment>.*), /service/user/$\{segment}
+            - RewritePath=/api/users(?<segment>.*), /service/user$\{segment}
 
         - id: role-service
           uri: ${ORION_USER_URL:http://localhost:8092}
           predicates:
             - Path=/api/roles/**
           filters:
-            - StripPrefix=1
-            - RewritePath=/roles/(?<segment>.*), /service/role/$\{segment}
+            - RewritePath=/api/roles(?<segment>.*), /service/role$\{segment}
 
         - id: auth-service
           uri: ${ORION_AUTH_URL:http://localhost:8091}
           predicates:
             - Path=/api/auth/**
           filters:
-            - StripPrefix=1
-            - RewritePath=/auth/(?<segment>.*), /authenticate/$\{segment}
+            - RewritePath=/api/auth(?<segment>.*), /authenticate$\{segment}
 
         - id: program-service
           uri: ${ORION_PROGRAM_URL:http://localhost:8093}
           predicates:
             - Path=/api/programs/**
           filters:
-            - StripPrefix=1
-            - RewritePath=/programs/(?<segment>.*), /service/program/$\{segment}
+            - RewritePath=/api/programs(?<segment>.*), /service/program$\{segment}
 
         - id: document-service
           uri: ${ORION_DOCUMENT_URL:http://localhost:8094}
           predicates:
             - Path=/api/documents/**
           filters:
-            - StripPrefix=1
-            - RewritePath=/documents/(?<segment>.*), /service/document/$\{segment}
+            - RewritePath=/api/documents(?<segment>.*), /service/document$\{segment}
 
         - id: drive-service
           uri: ${ORION_DRIVE_URL:http://localhost:8095}
           predicates:
             - Path=/api/drive/**
           filters:
-            - StripPrefix=1
-            - RewritePath=/drive/(?<segment>.*), /service/drive/$\{segment}
+            - RewritePath=/api/drive(?<segment>.*), /service/drive$\{segment}
 
       globalcors:
         cors-configurations:
