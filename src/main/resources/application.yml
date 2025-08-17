@@ -1,10 +1,103 @@
+server:
+  port: 8080
+
 spring:
+  application:
+    name: orion-gateway
+
   cloud:
     gateway:
+      routes:
+        - id: user-service
+          uri: ${ORION_USER_URL:http://localhost:8092}
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - StripPrefix=1
+            - RewritePath=/users/(?<segment>.*), /service/user/$\{segment}
+
+        - id: role-service
+          uri: ${ORION_USER_URL:http://localhost:8092}
+          predicates:
+            - Path=/api/roles/**
+          filters:
+            - StripPrefix=1
+            - RewritePath=/roles/(?<segment>.*), /service/role/$\{segment}
+
+        - id: auth-service
+          uri: ${ORION_AUTH_URL:http://localhost:8091}
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=1
+            - RewritePath=/auth/(?<segment>.*), /authenticate/$\{segment}
+
+        - id: program-service
+          uri: ${ORION_PROGRAM_URL:http://localhost:8093}
+          predicates:
+            - Path=/api/programs/**
+          filters:
+            - StripPrefix=1
+            - RewritePath=/programs/(?<segment>.*), /service/program/$\{segment}
+
+        - id: document-service
+          uri: ${ORION_DOCUMENT_URL:http://localhost:8094}
+          predicates:
+            - Path=/api/documents/**
+          filters:
+            - StripPrefix=1
+            - RewritePath=/documents/(?<segment>.*), /service/document/$\{segment}
+
+        - id: drive-service
+          uri: ${ORION_DRIVE_URL:http://localhost:8095}
+          predicates:
+            - Path=/api/drive/**
+          filters:
+            - StripPrefix=1
+            - RewritePath=/drive/(?<segment>.*), /service/drive/$\{segment}
+
       globalcors:
-        corsConfigurations:
+        cors-configurations:
           '[/**]':
-            allowedOrigins: "http://localhost:5173"  # Change this based on your frontend URL
-            allowedMethods: "*"  # Allows all HTTP methods (GET, POST, PUT, DELETE, etc.)
-            allowedHeaders: "*"  # Allows all headers
-            allowCredentials: true  # Allows credentials (cookies, authorization headers)
+            allowed-origin-patterns:
+              - "http://localhost:*"
+              - "http://127.0.0.1:*"
+              - "https://*.vercel.app"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+        - AddResponseHeader=X-Gateway-Service, orion-gateway
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    gateway:
+      enabled: true
+
+info:
+  app:
+    name: Orion Gateway
+    description: Modern Gateway for Orion Microservices
+    version: 1.0.0
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    org.springframework.web.cors: DEBUG
+    com.unibague.gradework: DEBUG

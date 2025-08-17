@@ -1,10 +1,10 @@
-package com.unibague.gradework.orionapigateway;
+package com.unibague.gradework.oriongateway;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class OrionApigatewayApplicationTests {
+class OrionGatewayApplicationTests {
 
 	@Test
 	void contextLoads() {

@@ -1,13 +1,12 @@
-package com.unibague.gradework.orionapigateway;
+package com.unibague.gradework.oriongateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class OrionApigatewayApplication {
+public class OrionGatewayApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(OrionApigatewayApplication.class, args);
+		SpringApplication.run(OrionGatewayApplication.class, args);
 	}
-
 }
