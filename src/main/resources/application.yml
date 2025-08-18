@@ -26,7 +26,7 @@ spring:
       routes:
         # User Management Routes con Load Balancing
         - id: user-service-lb
-          uri: lb://orion-user  # lb:// activa el load balancer
+          uri: ${ORION_USER_URL:lb://orion-user}  # Usa variable de entorno
           predicates:
             - Path=/api/users/**
           filters:
@@ -44,7 +44,7 @@ spring:
                   maxBackoff: 500ms
 
         - id: role-service-lb
-          uri: lb://orion-user  # Roles van al mismo servicio de users
+          uri: ${ORION_USER_URL:lb://orion-user}  # Roles van al mismo servicio de users
           predicates:
             - Path=/api/roles/**
           filters:
@@ -56,7 +56,7 @@ spring:
 
         # Authentication Routes con Load Balancing
         - id: auth-service-lb
-          uri: lb://orion-auth
+          uri: ${ORION_AUTH_URL:lb://orion-auth}
           predicates:
             - Path=/api/auth/**
           filters:
@@ -72,19 +72,19 @@ spring:
 
         # Program Management Routes con Load Balancing
         - id: program-service-lb
-          uri: lb://orion-program
+          uri: ${ORION_PROGRAM_URL:lb://orion-program}
           predicates:
             - Path=/api/programs/**
           filters:
             - RewritePath=/api/programs(?<segment>.*), /service/program$\{segment}
             - name: CircuitBreaker
               args:
-                name: program-service-cb
-                fallbackUri: forward:/fallback/program
+                 name: program-service-cb
+                 fallbackUri: forward:/fallback/program
 
         # Document Management Routes con Load Balancing
         - id: document-service-lb
-          uri: lb://orion-document
+          uri: ${ORION_DOCUMENT_URL:lb://orion-document}
           predicates:
             - Path=/api/documents/**
           filters:
@@ -96,7 +96,7 @@ spring:
 
         # Drive Service Routes con Load Balancing
         - id: drive-service-lb
-          uri: lb://orion-drive
+          uri: ${ORION_DRIVE_URL:lb://orion-drive}
           predicates:
             - Path=/api/drive/**
           filters:
@@ -168,16 +168,17 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,gateway,metrics,env,circuitbreakers,lb
+        include: health,info,gateway,metrics,env,circuitbreakers
       base-path: /actuator
   endpoint:
     health:
       show-details: always
     gateway:
       enabled: true
-  metrics:
-    export:
-      prometheus:
+  # Métrica de Prometheus (nueva configuración)
+  prometheus:
+    metrics:
+      export:
         enabled: true
 
 # Application Info
