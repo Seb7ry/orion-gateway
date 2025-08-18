@@ -12,9 +12,9 @@ spring:
       discovery:
         enabled: false
 
-    # Load Balancer Configuration
+    # Load balancer configuration for service discovery
     loadbalancer:
-      # Algoritmo de balanceo: round_robin, random, weighted_random
+      # Load balancing algorithm: round_robin, random, weighted_random
       configurations:
         default:
           health-check:
@@ -22,11 +22,11 @@ spring:
             interval: 30s
 
     gateway:
-      # Configuración de rutas con Load Balancing
+      # Gateway route configuration with load balancing
       routes:
-        # User Management Routes con Load Balancing
+        # User management routes with load balancing
         - id: user-service-lb
-          uri: ${ORION_USER_URL:lb://orion-user}  # Usa variable de entorno
+          uri: ${ORION_USER_URL:lb://orion-user}  # Uses environment variable
           predicates:
             - Path=/api/users/**
           filters:
@@ -44,7 +44,7 @@ spring:
                   maxBackoff: 500ms
 
         - id: role-service-lb
-          uri: ${ORION_USER_URL:lb://orion-user}  # Roles van al mismo servicio de users
+          uri: ${ORION_USER_URL:lb://orion-user}  # Roles go to the same user service
           predicates:
             - Path=/api/roles/**
           filters:
@@ -54,7 +54,7 @@ spring:
                 name: role-service-cb
                 fallbackUri: forward:/fallback/user
 
-        # Authentication Routes con Load Balancing
+        # Authentication routes with load balancing
         - id: auth-service-lb
           uri: ${ORION_AUTH_URL:lb://orion-auth}
           predicates:
@@ -70,7 +70,7 @@ spring:
                 retries: 2
                 statuses: BAD_GATEWAY,GATEWAY_TIMEOUT
 
-        # Program Management Routes con Load Balancing
+        # Program management routes with load balancing
         - id: program-service-lb
           uri: ${ORION_PROGRAM_URL:lb://orion-program}
           predicates:
@@ -82,7 +82,7 @@ spring:
                  name: program-service-cb
                  fallbackUri: forward:/fallback/program
 
-        # Document Management Routes con Load Balancing
+        # Document management routes with load balancing
         - id: document-service-lb
           uri: ${ORION_DOCUMENT_URL:lb://orion-document}
           predicates:
@@ -94,7 +94,7 @@ spring:
                 name: document-service-cb
                 fallbackUri: forward:/fallback/document
 
-        # Drive Service Routes con Load Balancing
+        # Drive service routes with load balancing
         - id: drive-service-lb
           uri: ${ORION_DRIVE_URL:lb://orion-drive}
           predicates:
@@ -106,7 +106,7 @@ spring:
                 name: drive-service-cb
                 fallbackUri: forward:/fallback/drive
 
-        # Health Check Route (sin load balancing)
+        # Health check route (without load balancing)
         - id: health-check
           uri: http://localhost:8080
           predicates:
@@ -134,7 +134,7 @@ spring:
             allow-credentials: true
             max-age: 3600
 
-      # Default filters aplicados a todas las rutas
+      # Default filters applied to all routes
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
         - AddResponseHeader=X-Gateway-Service, ${GATEWAY_NAME:orion-gateway}
@@ -175,7 +175,7 @@ management:
       show-details: always
     gateway:
       enabled: true
-  # Métrica de Prometheus (nueva configuración)
+  # Prometheus metrics configuration
   prometheus:
     metrics:
       export:

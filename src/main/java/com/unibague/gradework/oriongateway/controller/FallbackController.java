@@ -13,11 +13,20 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
+/**
+ * Fallback controller for handling service unavailability
+ * Provides graceful degradation when microservices are down
+ */
 @Slf4j
 @RestController
 @RequestMapping("/fallback")
 public class FallbackController {
 
+    /**
+     * Fallback endpoint for user service when unavailable
+     * @param exchange the web exchange context
+     * @return Mono with error response indicating service unavailability
+     */
     @GetMapping("/user/**")
     @PostMapping("/user/**")
     public Mono<ResponseEntity<ErrorResponse>> userServiceFallback(ServerWebExchange exchange) {
@@ -28,6 +37,11 @@ public class FallbackController {
         );
     }
 
+    /**
+     * Fallback endpoint for authentication service when unavailable
+     * @param exchange the web exchange context
+     * @return Mono with error response indicating service unavailability
+     */
     @GetMapping("/auth/**")
     @PostMapping("/auth/**")
     public Mono<ResponseEntity<ErrorResponse>> authServiceFallback(ServerWebExchange exchange) {
@@ -38,6 +52,11 @@ public class FallbackController {
         );
     }
 
+    /**
+     * Fallback endpoint for program service when unavailable
+     * @param exchange the web exchange context
+     * @return Mono with error response indicating service unavailability
+     */
     @GetMapping("/program/**")
     @PostMapping("/program/**")
     public Mono<ResponseEntity<ErrorResponse>> programServiceFallback(ServerWebExchange exchange) {
@@ -48,6 +67,11 @@ public class FallbackController {
         );
     }
 
+    /**
+     * Fallback endpoint for document service when unavailable
+     * @param exchange the web exchange context
+     * @return Mono with error response indicating service unavailability
+     */
     @GetMapping("/document/**")
     @PostMapping("/document/**")
     public Mono<ResponseEntity<ErrorResponse>> documentServiceFallback(ServerWebExchange exchange) {
@@ -58,6 +82,11 @@ public class FallbackController {
         );
     }
 
+    /**
+     * Fallback endpoint for drive service when unavailable
+     * @param exchange the web exchange context
+     * @return Mono with error response indicating service unavailability
+     */
     @GetMapping("/drive/**")
     @PostMapping("/drive/**")
     public Mono<ResponseEntity<ErrorResponse>> driveServiceFallback(ServerWebExchange exchange) {
@@ -68,6 +97,13 @@ public class FallbackController {
         );
     }
 
+    /**
+     * Creates a standardized fallback response
+     * @param errorType the type of error
+     * @param message descriptive error message
+     * @param exchange the web exchange context
+     * @return Mono with formatted error response
+     */
     private Mono<ResponseEntity<ErrorResponse>> createFallbackResponse(
             String errorType,
             String message,

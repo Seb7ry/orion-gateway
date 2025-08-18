@@ -13,13 +13,26 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+/**
+ * Global filter for logging HTTP requests and responses
+ * Provides request tracing, timing, and monitoring capabilities
+ */
 @Slf4j
 @Component
 public class RequestLoggingFilter implements GlobalFilter, Ordered {
 
+    /** Attribute key for storing request start time */
     private static final String REQUEST_START_TIME = "requestStartTime";
+    
+    /** Attribute key for storing unique request ID */
     private static final String REQUEST_ID = "requestId";
 
+    /**
+     * Main filter method for request logging
+     * @param exchange the web exchange
+     * @param chain the filter chain
+     * @return Mono<Void> representing the completion of filtering
+     */
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
@@ -44,6 +57,10 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
                 .doOnError(throwable -> logErrorResponse(exchange, throwable));
     }
 
+    /**
+     * Logs successful response with timing information
+     * @param exchange the web exchange
+     */
     private void logSuccessfulResponse(ServerWebExchange exchange) {
         String requestId = exchange.getAttribute(REQUEST_ID);
         LocalDateTime startTime = exchange.getAttribute(REQUEST_START_TIME);
@@ -59,6 +76,11 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
         }
     }
 
+    /**
+     * Logs error response with details
+     * @param exchange the web exchange
+     * @param throwable the error that occurred
+     */
     private void logErrorResponse(ServerWebExchange exchange, Throwable throwable) {
         String requestId = exchange.getAttribute(REQUEST_ID);
         LocalDateTime startTime = exchange.getAttribute(REQUEST_START_TIME);
@@ -70,6 +92,11 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
                 requestId, throwable.getMessage(), path, duration);
     }
 
+    /**
+     * Extracts client IP address from request headers or remote address
+     * @param request the HTTP request
+     * @return client IP address
+     */
     private String getClientIp(ServerHttpRequest request) {
         String xForwardedFor = request.getHeaders().getFirst("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
@@ -85,6 +112,10 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
                 request.getRemoteAddress().getAddress().getHostAddress() : "Unknown";
     }
 
+    /**
+     * Sets filter order to highest precedence for early execution
+     * @return filter order value
+     */
     @Override
     public int getOrder() {
         return Ordered.HIGHEST_PRECEDENCE;

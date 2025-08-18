@@ -28,38 +28,38 @@
 			<artifactId>spring-cloud-starter-gateway</artifactId>
 		</dependency>
 
-		<!-- Load Balancer - CLAVE para balanceo de cargas -->
+		<!-- Load Balancer - KEY component for load balancing -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-loadbalancer</artifactId>
 		</dependency>
 
-		<!-- Circuit Breaker para resilencia -->
+		<!-- Circuit Breaker for resilience -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
 		</dependency>
 
-		<!-- Service Discovery (para múltiples instancias) -->
+		<!-- Service Discovery (for multiple instances) -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-consul-discovery</artifactId>
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Monitoring y Health -->
+		<!-- Monitoring and Health -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
-		<!-- Metrics para Prometheus -->
+		<!-- Metrics for Prometheus -->
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>
 		</dependency>
 
-		<!-- Caffeine cache para LoadBalancer (elimina warning) -->
+		<!-- Caffeine cache for LoadBalancer (eliminates warnings) -->
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>

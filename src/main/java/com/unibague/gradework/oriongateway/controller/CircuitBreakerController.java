@@ -12,8 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Controlador para gestionar Circuit Breakers
- * Útil para debugging y administración
+ * Controller for managing Circuit Breakers
+ * Useful for debugging and administration
  */
 @Slf4j
 @RestController
@@ -24,7 +24,8 @@ public class CircuitBreakerController {
     private CircuitBreakerRegistry circuitBreakerRegistry;
 
     /**
-     * Ver estado de todos los circuit breakers
+     * Get status of all circuit breakers
+     * @return ResponseEntity with circuit breaker status information
      */
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getCircuitBreakerStatus() {
@@ -46,7 +47,9 @@ public class CircuitBreakerController {
     }
 
     /**
-     * Resetear un circuit breaker específico
+     * Reset a specific circuit breaker
+     * @param circuitBreakerName name of the circuit breaker to reset
+     * @return ResponseEntity with reset operation result
      */
     @PostMapping("/reset/{circuitBreakerName}")
     public ResponseEntity<Map<String, String>> resetCircuitBreaker(@PathVariable String circuitBreakerName) {
@@ -75,7 +78,9 @@ public class CircuitBreakerController {
     }
 
     /**
-     * Forzar apertura de un circuit breaker (para testing)
+     * Force open a circuit breaker (for testing)
+     * @param circuitBreakerName name of the circuit breaker to open
+     * @return ResponseEntity with open operation result
      */
     @PostMapping("/open/{circuitBreakerName}")
     public ResponseEntity<Map<String, String>> openCircuitBreaker(@PathVariable String circuitBreakerName) {
@@ -102,7 +107,8 @@ public class CircuitBreakerController {
     }
 
     /**
-     * Resetear TODOS los circuit breakers
+     * Reset ALL circuit breakers
+     * @return ResponseEntity with batch reset operation results
      */
     @PostMapping("/reset-all")
     public ResponseEntity<Map<String, Object>> resetAllCircuitBreakers() {

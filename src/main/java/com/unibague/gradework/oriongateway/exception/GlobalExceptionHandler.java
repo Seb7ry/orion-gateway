@@ -15,6 +15,10 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
+/**
+ * Global exception handler for the API Gateway
+ * Provides centralized error handling and consistent error responses
+ */
 @Slf4j
 @Component
 @Order(-1)
@@ -22,11 +26,20 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
 
     private final ObjectMapper objectMapper;
 
+    /**
+     * Constructor initializing the ObjectMapper with time module
+     */
     public GlobalExceptionHandler() {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
     }
 
+    /**
+     * Main exception handling method
+     * @param exchange the web exchange
+     * @param ex the exception that occurred
+     * @return Mono<Void> representing the completion of error handling
+     */
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
 
@@ -55,6 +68,11 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
         return exchange.getResponse().writeWith(Mono.just(buffer));
     }
 
+    /**
+     * Determines appropriate HTTP status based on exception type
+     * @param ex the exception
+     * @return appropriate HttpStatus
+     */
     private HttpStatus determineHttpStatus(Throwable ex) {
         if (ex instanceof IllegalArgumentException) {
             return HttpStatus.BAD_REQUEST;
@@ -75,6 +93,13 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
         }
     }
 
+    /**
+     * Logs errors with appropriate level based on status
+     * @param ex the exception
+     * @param path request path
+     * @param requestId unique request identifier
+     * @param status HTTP status
+     */
     private void logError(Throwable ex, String path, String requestId, HttpStatus status) {
         if (status == HttpStatus.BAD_REQUEST) {
             log.warn("Validation error: {}", ex.getMessage());
@@ -87,6 +112,14 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
         }
     }
 
+    /**
+     * Creates standardized error response
+     * @param ex the exception
+     * @param status HTTP status
+     * @param path request path
+     * @param requestId unique request identifier
+     * @return ErrorResponse object
+     */
     private ErrorResponse createErrorResponse(Throwable ex, HttpStatus status, String path, String requestId) {
         String errorType = determineErrorType(ex, status);
         String message = determineErrorMessage(ex, status);
@@ -102,6 +135,12 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
                 .build();
     }
 
+    /**
+     * Determines error type based on exception and status
+     * @param ex the exception
+     * @param status HTTP status
+     * @return error type string
+     */
     private String determineErrorType(Throwable ex, HttpStatus status) {
         if (ex instanceof IllegalArgumentException) {
             return "VALIDATION_ERROR";
@@ -120,6 +159,12 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
         }
     }
 
+    /**
+     * Determines user-friendly error message
+     * @param ex the exception
+     * @param status HTTP status
+     * @return user-friendly error message
+     */
     private String determineErrorMessage(Throwable ex, HttpStatus status) {
         if (ex instanceof IllegalArgumentException) {
             return ex.getMessage();
@@ -142,6 +187,13 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
         }
     }
 
+    /**
+     * Creates fallback JSON error response when serialization fails
+     * @param ex the exception
+     * @param status HTTP status
+     * @param path request path
+     * @return JSON string for error response
+     */
     private String createFallbackErrorJson(Throwable ex, HttpStatus status, String path) {
         return String.format(
                 "{\"error\":\"SERIALIZATION_ERROR\",\"message\":\"Error processing gateway response\",\"timestamp\":\"%s\",\"path\":\"%s\",\"status\":%d,\"gateway\":\"orion-gateway\"}",
