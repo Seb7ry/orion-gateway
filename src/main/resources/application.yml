@@ -6,6 +6,12 @@ spring:
     name: ${GATEWAY_NAME:orion-gateway}
 
   cloud:
+    # Disable Consul Discovery
+    consul:
+      enabled: false
+      discovery:
+        enabled: false
+
     # Load Balancer Configuration
     loadbalancer:
       # Algoritmo de balanceo: round_robin, random, weighted_random
