@@ -26,7 +26,7 @@ spring:
       routes:
         # User management routes with load balancing
         - id: user-service-lb
-          uri: ${ORION_USER_URL:lb://orion-user}  # Uses environment variable
+          uri: ${ORION_USER_URL:http://orion-user:8092} # Uses environment variable
           predicates:
             - Path=/api/users/**
           filters:
@@ -44,7 +44,7 @@ spring:
                   maxBackoff: 500ms
 
         - id: role-service-lb
-          uri: ${ORION_USER_URL:lb://orion-user}  # Roles go to the same user service
+          uri: ${ORION_USER_URL:http://orion-user:8092} # Roles go to the same user service
           predicates:
             - Path=/api/roles/**
           filters:
@@ -56,7 +56,7 @@ spring:
 
         # Authentication routes with load balancing
         - id: auth-service-lb
-          uri: ${ORION_AUTH_URL:lb://orion-auth}
+          uri: ${ORION_AUTH_URL:http://orion-auth:8091}
           predicates:
             - Path=/api/auth/**
           filters:
@@ -72,7 +72,7 @@ spring:
 
         # Program management routes with load balancing
         - id: program-service-lb
-          uri: ${ORION_PROGRAM_URL:lb://orion-program}
+          uri: ${ORION_PROGRAM_URL:http://orion-program:8093}
           predicates:
             - Path=/api/programs/**
           filters:
@@ -84,7 +84,7 @@ spring:
 
         # Document management routes with load balancing
         - id: document-service-lb
-          uri: ${ORION_DOCUMENT_URL:lb://orion-document}
+          uri: ${ORION_DOCUMENT_URL:http://orion-document:8094}
           predicates:
             - Path=/api/documents/**
           filters:
@@ -96,7 +96,7 @@ spring:
 
         # Drive service routes with load balancing
         - id: drive-service-lb
-          uri: ${ORION_DRIVE_URL:lb://orion-drive}
+          uri: ${ORION_DRIVE_URL:http://orion-drive:8095}
           predicates:
             - Path=/api/drive/**
           filters:

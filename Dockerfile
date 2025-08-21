@@ -65,11 +65,11 @@ ENV SERVER_PORT=8080
 ENV GATEWAY_NAME=orion-gateway
 
 # Gateway microservice URLs (Docker network)
-ENV ORION_AUTH_URL=lb://orion-auth
-ENV ORION_USER_URL=lb://orion-user
-ENV ORION_PROGRAM_URL=lb://orion-program
-ENV ORION_DOCUMENT_URL=lb://orion-document
-ENV ORION_DRIVE_URL=lb://orion-drive
+ENV ORION_AUTH_URL=http://orion-auth:8091
+ENV ORION_USER_URL=http://orion-user:8092
+ENV ORION_PROGRAM_URL=http://orion-program:8093
+ENV ORION_DOCUMENT_URL=http://orion-document:8094
+ENV ORION_DRIVE_URL=http://orion-drive:8095
 
 # Logging
 ENV LOGGING_LEVEL=INFO

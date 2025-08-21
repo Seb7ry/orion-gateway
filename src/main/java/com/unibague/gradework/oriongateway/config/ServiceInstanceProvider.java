@@ -35,7 +35,7 @@ public class ServiceInstanceProvider {
         @Bean
         public ServiceInstanceListSupplier programServiceInstanceListSupplier() {
             return new StaticServiceInstanceListSupplier("orion-program", Arrays.asList(
-                    new DefaultServiceInstance("program-1", "orion-program", "localhost", 8093, false)
+                    new DefaultServiceInstance("program-1", "orion-program", "orion-program", 8093, false)
             ));
         }
     }
@@ -51,7 +51,7 @@ public class ServiceInstanceProvider {
         @Bean
         public ServiceInstanceListSupplier userServiceInstanceListSupplier() {
             return new StaticServiceInstanceListSupplier("orion-user", Arrays.asList(
-                    new DefaultServiceInstance("user-1", "orion-user", "localhost", 8092, false)
+                    new DefaultServiceInstance("user-1", "orion-user", "orion-user", 8092, false)
             ));
         }
     }
@@ -67,7 +67,7 @@ public class ServiceInstanceProvider {
         @Bean
         public ServiceInstanceListSupplier authServiceInstanceListSupplier() {
             return new StaticServiceInstanceListSupplier("orion-auth", Arrays.asList(
-                    new DefaultServiceInstance("auth-1", "orion-auth", "localhost", 8091, false)
+                    new DefaultServiceInstance("auth-1", "orion-auth", "orion-auth", 8091, false)
             ));
         }
     }
