@@ -1,9 +1,17 @@
+# ===========================================
+# ORION GATEWAY SERVICE - Simplified Configuration
+# Uses centralized environment variables from .env files
+# ===========================================
+
 server:
   port: ${SERVER_PORT:8080}
 
 spring:
   application:
     name: ${GATEWAY_NAME:orion-gateway}
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
 
   cloud:
     # Disable Consul Discovery
@@ -12,9 +20,8 @@ spring:
       discovery:
         enabled: false
 
-    # Load balancer configuration for service discovery
+    # Load balancer configuration
     loadbalancer:
-      # Load balancing algorithm: round_robin, random, weighted_random
       configurations:
         default:
           health-check:
@@ -22,11 +29,11 @@ spring:
             interval: 30s
 
     gateway:
-      # Gateway route configuration with load balancing
+      # Gateway route configuration with centralized URLs
       routes:
-        # User management routes with load balancing
+        # User management routes
         - id: user-service-lb
-          uri: ${ORION_USER_URL:http://orion-user:8092} # Uses environment variable
+          uri: ${ORION_USER_URL}
           predicates:
             - Path=/api/users/**
           filters:
@@ -44,7 +51,7 @@ spring:
                   maxBackoff: 500ms
 
         - id: role-service-lb
-          uri: ${ORION_USER_URL:http://orion-user:8092} # Roles go to the same user service
+          uri: ${ORION_USER_URL}
           predicates:
             - Path=/api/roles/**
           filters:
@@ -54,9 +61,9 @@ spring:
                 name: role-service-cb
                 fallbackUri: forward:/fallback/user
 
-        # Authentication routes with load balancing
+        # Authentication routes
         - id: auth-service-lb
-          uri: ${ORION_AUTH_URL:http://orion-auth:8091}
+          uri: ${ORION_AUTH_URL}
           predicates:
             - Path=/api/auth/**
           filters:
@@ -70,21 +77,21 @@ spring:
                 retries: 2
                 statuses: BAD_GATEWAY,GATEWAY_TIMEOUT
 
-        # Program management routes with load balancing
+        # Program management routes
         - id: program-service-lb
-          uri: ${ORION_PROGRAM_URL:http://orion-program:8093}
+          uri: ${ORION_PROGRAM_URL}
           predicates:
             - Path=/api/programs/**
           filters:
             - RewritePath=/api/programs(?<segment>.*), /service/program$\{segment}
             - name: CircuitBreaker
               args:
-                 name: program-service-cb
-                 fallbackUri: forward:/fallback/program
+                name: program-service-cb
+                fallbackUri: forward:/fallback/program
 
-        # Document management routes with load balancing
+        # Document management routes
         - id: document-service-lb
-          uri: ${ORION_DOCUMENT_URL:http://orion-document:8094}
+          uri: ${ORION_DOCUMENT_URL}
           predicates:
             - Path=/api/documents/**
           filters:
@@ -94,9 +101,9 @@ spring:
                 name: document-service-cb
                 fallbackUri: forward:/fallback/document
 
-        # Drive service routes with load balancing
+        # Drive service routes
         - id: drive-service-lb
-          uri: ${ORION_DRIVE_URL:http://orion-drive:8095}
+          uri: ${ORION_DRIVE_URL}
           predicates:
             - Path=/api/drive/**
           filters:
@@ -106,15 +113,15 @@ spring:
                 name: drive-service-cb
                 fallbackUri: forward:/fallback/drive
 
-        # Health check route (without load balancing)
+        # Health check route
         - id: health-check
-          uri: http://localhost:8080
+          uri: http://localhost:${SERVER_PORT:8080}
           predicates:
             - Path=/health
           filters:
             - SetPath=/actuator/health
 
-      # CORS Configuration
+      # CORS Configuration - Uses centralized variables
       globalcors:
         cors-configurations:
           '[/**]':
@@ -134,22 +141,22 @@ spring:
             allow-credentials: true
             max-age: 3600
 
-      # Default filters applied to all routes
+      # Default filters
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
         - AddResponseHeader=X-Gateway-Service, ${GATEWAY_NAME:orion-gateway}
         - AddResponseHeader=X-Gateway-Version, 1.0.0
         - AddResponseHeader=X-Load-Balancer, enabled
 
-# Circuit Breaker Configuration
+# Circuit Breaker Configuration - Uses centralized variables
 resilience4j:
   circuitbreaker:
     configs:
       default:
         sliding-window-size: 10
-        minimum-number-of-calls: 5
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 30s
+        minimum-number-of-calls: ${SERVICE_MIN_CALLS:5}
+        failure-rate-threshold: ${SERVICE_FAILURE_RATE:50}
+        wait-duration-in-open-state: ${SERVICE_CIRCUIT_WAIT:30s}
         permitted-number-of-calls-in-half-open-state: 3
     instances:
       user-service-cb:
@@ -175,13 +182,12 @@ management:
       show-details: always
     gateway:
       enabled: true
-  # Prometheus metrics configuration
   prometheus:
     metrics:
       export:
         enabled: true
 
-# Application Info
+# Application Info - Uses centralized variables
 info:
   app:
     name: ${GATEWAY_NAME:Orion Gateway}
@@ -193,13 +199,55 @@ info:
       - Retry Logic
       - Health Checks
 
-# Logging Configuration
+# Logging Configuration - Uses centralized variables
 logging:
   level:
-    org.springframework.cloud.gateway: INFO
-    org.springframework.cloud.loadbalancer: DEBUG
-    org.springframework.web.cors: DEBUG
-    com.unibague.gradework: DEBUG
-    org.springframework.cloud.circuitbreaker: INFO
+    org.springframework.cloud.gateway: ${LOG_LEVEL_GATEWAY:INFO}
+    org.springframework.cloud.loadbalancer: ${LOG_LEVEL_GATEWAY:DEBUG}
+    org.springframework.web.cors: ${LOG_LEVEL_WEB:DEBUG}
+    com.unibague.gradework: ${LOG_LEVEL:DEBUG}
+    org.springframework.cloud.circuitbreaker: ${LOG_LEVEL_GATEWAY:INFO}
+    root: ${LOGGING_LEVEL:INFO}
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"
+
+---
+# ===========================================
+# DEVELOPMENT PROFILE
+# ===========================================
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+# Development-specific overrides if needed
+logging:
+  level:
+    org.springframework.cloud.loadbalancer: DEBUG
+
+---
+# ===========================================
+# DOCKER PROFILE
+# ===========================================
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+# All Docker configuration comes from environment variables
+
+---
+# ===========================================
+# PRODUCTION PROFILE
+# ===========================================
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+# Production-specific settings
+logging:
+  level:
+    root: WARN
+    com.unibague.gradework: INFO
+    org.springframework.cloud.loadbalancer: INFO

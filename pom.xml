@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+	===========================================
+	ORION GATEWAY SERVICE - Maven POM Configuration
+	Spring Cloud Gateway for Orion Microservices Architecture
+	Provides load balancing, circuit breaking, and API routing
+	===========================================
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
+	<!-- Parent project configuration -->
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
@@ -10,67 +18,97 @@
 		<relativePath/>
 	</parent>
 
+	<!-- Project identification -->
 	<groupId>com.unibague.gradework</groupId>
 	<artifactId>orion-gateway</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>orion-gateway</name>
 	<description>Modern Gateway for Orion Microservices with Load Balancing</description>
 
+	<!-- Build properties -->
 	<properties>
+		<!-- Java version -->
 		<java.version>21</java.version>
+		<!-- Spring Cloud version compatibility -->
 		<spring-cloud.version>2024.0.0</spring-cloud.version>
 	</properties>
 
+	<!-- Project dependencies -->
 	<dependencies>
-		<!-- Core Gateway -->
+		<!-- ===========================================
+		     CORE GATEWAY DEPENDENCIES
+		     =========================================== -->
+		
+		<!-- Spring Cloud Gateway - Core routing and filtering -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-gateway</artifactId>
 		</dependency>
 
-		<!-- Load Balancer - KEY component for load balancing -->
+		<!-- Spring Cloud Load Balancer - Client-side load balancing -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-loadbalancer</artifactId>
 		</dependency>
 
-		<!-- Circuit Breaker for resilience -->
+		<!-- ===========================================
+		     RESILIENCE DEPENDENCIES
+		     =========================================== -->
+		
+		<!-- Resilience4j Circuit Breaker - Fault tolerance patterns -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
 		</dependency>
 
-		<!-- Service Discovery (for multiple instances) -->
+		<!-- ===========================================
+		     SERVICE DISCOVERY DEPENDENCIES
+		     =========================================== -->
+		
+		<!-- Consul Service Discovery - Optional for dynamic service registration -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-consul-discovery</artifactId>
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Monitoring and Health -->
+		<!-- ===========================================
+		     MONITORING AND OBSERVABILITY
+		     =========================================== -->
+		
+		<!-- Spring Boot Actuator - Health checks and metrics endpoints -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
-		<!-- Metrics for Prometheus -->
+		<!-- Micrometer Prometheus Registry - Metrics collection for Prometheus -->
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>
 		</dependency>
 
-		<!-- Caffeine cache for LoadBalancer (eliminates warnings) -->
+		<!-- ===========================================
+		     CACHING AND PERFORMANCE
+		     =========================================== -->
+		
+		<!-- Caffeine Cache - High performance caching for load balancer -->
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
 		</dependency>
 
+		<!-- Spring Context Support - Additional context and caching support -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context-support</artifactId>
 		</dependency>
 
-		<!-- Development Tools -->
+		<!-- ===========================================
+		     DEVELOPMENT TOOLS
+		     =========================================== -->
+		
+		<!-- Spring Boot DevTools - Hot reloading and development utilities -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
@@ -78,19 +116,25 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Lombok - Reduces boilerplate code with annotations -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Testing -->
+		<!-- ===========================================
+		     TESTING DEPENDENCIES
+		     =========================================== -->
+		
+		<!-- Spring Boot Test Starter - Unit and integration testing framework -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 
+		<!-- WireMock - Mock external services for testing -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-contract-wiremock</artifactId>
@@ -98,8 +142,10 @@
 		</dependency>
 	</dependencies>
 
+	<!-- Dependency management for Spring Cloud versions -->
 	<dependencyManagement>
 		<dependencies>
+			<!-- Spring Cloud BOM - Ensures compatible versions across Cloud components -->
 			<dependency>
 				<groupId>org.springframework.cloud</groupId>
 				<artifactId>spring-cloud-dependencies</artifactId>
@@ -110,13 +156,16 @@
 		</dependencies>
 	</dependencyManagement>
 
+	<!-- Build configuration -->
 	<build>
 		<plugins>
+			<!-- Spring Boot Maven Plugin - Creates executable JAR with embedded server -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
 					<excludes>
+						<!-- Exclude Lombok from final JAR (compile-time only dependency) -->
 						<exclude>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
