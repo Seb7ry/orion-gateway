@@ -67,7 +67,7 @@ spring:
           predicates:
             - Path=/api/auth/**
           filters:
-            - RewritePath=/api/auth(?<segment>.*), /authenticate$\{segment}
+            - RewritePath=/api/auth(?<segment>.*), /auth$\{segment}
             - name: CircuitBreaker
               args:
                 name: auth-service-cb
@@ -143,6 +143,7 @@ spring:
 
       # Default filters
       default-filters:
+        - AddRequestHeader=X-Gateway-Validated, true
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
         - AddResponseHeader=X-Gateway-Service, ${GATEWAY_NAME:orion-gateway}
         - AddResponseHeader=X-Gateway-Version, 1.0.0
