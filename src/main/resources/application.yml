@@ -31,6 +31,21 @@ spring:
     gateway:
       # Gateway route configuration with centralized URLs
       routes:
+        # OAuth2 routeS
+        - id: oauth2-authorization
+          uri: ${ORION_AUTH_URL}
+          predicates:
+            - Path=/oauth2/authorization/**
+          filters:
+            - RewritePath=/oauth2/authorization(?<segment>.*), /oauth2/authorization$\{segment}
+
+        - id: oauth2-callback
+          uri: ${ORION_AUTH_URL}
+          predicates:
+            - Path=/login/oauth2/code/**
+          filters:
+            - RewritePath=/login/oauth2/code(?<segment>.*), /login/oauth2/code$\{segment}
+
         # User management routes
         - id: user-service-lb
           uri: ${ORION_USER_URL}

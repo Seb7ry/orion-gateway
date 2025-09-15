@@ -33,8 +33,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/auth/login",
             "/api/auth/oauth2",
             "/api/auth/jwks",
-            "/api/auth/validate",  // El Gateway necesita poder validar tokens
-            "/api/auth/utils",     // Utilities para desarrollo
+            "/api/auth/validate",
+            "/oauth2/authorization/**",
+            "/login/oauth2/code/**",
             "/actuator/health",
             "/health"
     );
