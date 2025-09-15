@@ -18,8 +18,7 @@ import java.util.Map;
 
 /**
  * Global JWT Authentication Filter for API Gateway
- * Validates JWT tokens and enriches requests with user context
- * Bypasses authentication for internal service requests
+ * FIXED: Properly handles OAuth2 and internal service routes
  */
 @Slf4j
 @Component
@@ -28,16 +27,26 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Autowired
     private AuthServiceClient authServiceClient;
 
-    // Public routes que no requieren autenticación
+    // Rutas públicas que NO requieren autenticación JWT
     private static final List<String> PUBLIC_ROUTES = List.of(
+            // OAuth2 routes
+            "/oauth2/authorization",
+            "/login/oauth2/code",
+
+            // Auth service public endpoints
             "/api/auth/login",
-            "/api/auth/oauth2",
-            "/api/auth/jwks",
             "/api/auth/validate",
-            "/oauth2/authorization/**",
-            "/login/oauth2/code/**",
+            "/api/auth/jwks",
+            "/api/auth/me",
+            "/api/auth/utils",
+            "/api/auth/debug",
+
+            // Health checks
             "/actuator/health",
-            "/health"
+            "/health",
+
+            // Fallback routes
+            "/fallback"
     );
 
     @Override
@@ -45,54 +54,63 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getPath().value();
         String requestId = exchange.getAttribute("requestId");
 
-        // IMPORTANTE: Skip JWT si es request de servicio interno
+        // 1. Skip JWT si es request de servicio interno
         Boolean skipJwtFilter = exchange.getAttribute("SKIP_JWT_FILTER");
         if (Boolean.TRUE.equals(skipJwtFilter)) {
-            log.debug("🔧 [{}] Skipping JWT filter for internal service request", requestId);
+            log.debug("[{}] Skipping JWT filter for internal service request", requestId);
             return chain.filter(exchange);
         }
 
-        // Skip authentication para rutas públicas
+        // 2. Skip JWT si tiene header X-Skip-Auth (configurado en rutas)
+        String skipAuth = exchange.getRequest().getHeaders().getFirst("X-Skip-Auth");
+        if ("true".equals(skipAuth)) {
+            log.debug("[{}] Skipping JWT filter due to X-Skip-Auth header: {}", requestId, path);
+            return chain.filter(exchange);
+        }
+
+        // 3. Skip JWT para rutas públicas
         if (isPublicRoute(path)) {
-            log.debug("🔓 [{}] Public route accessed: {}", requestId, path);
+            log.debug("[{}] Public route accessed: {}", requestId, path);
             return chain.filter(exchange);
         }
 
-        // Extraer JWT token del header Authorization
+        // 4. Extraer JWT token del header Authorization
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.warn("🚫 [{}] Missing or invalid Authorization header for: {}", requestId, path);
-            return unauthorizedResponse(exchange, "Missing or invalid Authorization header");
+            log.warn("[{}] Missing or invalid Authorization header for: {}", requestId, path);
+            return unauthorizedResponse(exchange, "Authentication required");
         }
 
         String token = authHeader.substring(7); // Remover "Bearer "
 
-        // Validar token con auth service
+        // 5. Validar token con auth service
         return authServiceClient.validateToken(token)
                 .flatMap(validationResult -> {
                     if (isTokenValid(validationResult)) {
                         // Enriquecer request con contexto de usuario
                         ServerWebExchange enrichedExchange = enrichRequestHeaders(exchange, validationResult);
-                        log.info("🔐 [{}] Authentication successful for user: {}",
+                        log.info("[{}] Authentication successful for user: {}",
                                 requestId, validationResult.get("userId"));
                         return chain.filter(enrichedExchange);
                     } else {
-                        log.warn("🚫 [{}] Token validation failed: {}", requestId, validationResult.get("error"));
+                        log.warn("[{}] Token validation failed: {}", requestId, validationResult.get("error"));
                         return unauthorizedResponse(exchange, "Invalid or expired token");
                     }
                 })
                 .onErrorResume(error -> {
-                    log.error("💥 [{}] Auth service communication failed: {}", requestId, error.getMessage());
+                    log.error("[{}] Auth service communication failed: {}", requestId, error.getMessage());
                     return serviceUnavailableResponse(exchange, "Authentication service unavailable");
                 });
     }
 
     /**
-     * Verificar si la ruta es pública (no requiere autenticación)
+     * Verificar si la ruta es pública (más flexible)
      */
     private boolean isPublicRoute(String path) {
-        return PUBLIC_ROUTES.stream().anyMatch(path::startsWith);
+        return PUBLIC_ROUTES.stream().anyMatch(publicRoute ->
+                path.startsWith(publicRoute) || path.contains(publicRoute)
+        );
     }
 
     /**
@@ -142,7 +160,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         response.getHeaders().add("X-Auth-Error", message);
 
         String body = String.format(
-                "{\"error\":\"UNAUTHORIZED\",\"message\":\"%s\",\"timestamp\":\"%s\",\"path\":\"%s\"}",
+                "{\"error\":\"AUTHENTICATION_REQUIRED\",\"message\":\"%s\",\"timestamp\":\"%s\",\"path\":\"%s\"}",
                 message,
                 java.time.LocalDateTime.now(),
                 exchange.getRequest().getPath().value()

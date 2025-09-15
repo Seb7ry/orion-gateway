@@ -36,13 +36,28 @@ public class InternalServiceFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getPath().value();
         String requestId = exchange.getAttribute("requestId");
 
-        // Verificar si es una request de servicio interno
+        // Si no hay requestId, generar uno temporal para debug
+        if (requestId == null) {
+            requestId = "temp-" + System.currentTimeMillis();
+            exchange.getAttributes().put("requestId", requestId);
+        }
+
+        // LOGGING DETALLADO PARA DEBUG
+        log.info("=== INTERNAL SERVICE FILTER DEBUG ===");
+        log.info("Path: {}", path);
+        log.info("Request ID: {}", requestId);
+
+        // Verificar headers
         String serviceRequest = exchange.getRequest().getHeaders().getFirst("X-Service-Request");
         String serviceName = exchange.getRequest().getHeaders().getFirst("X-Service-Name");
         String serviceToken = exchange.getRequest().getHeaders().getFirst("X-Service-Token");
 
+        log.info("X-Service-Request: {}", serviceRequest);
+        log.info("X-Service-Name: {}", serviceName);
+        log.info("X-Service-Token: {}", serviceToken != null ? serviceToken.substring(0, 10) + "..." : "null");
+
         if ("true".equals(serviceRequest) && isValidInternalService(serviceName, serviceToken)) {
-            log.info("🔧 [{}] Internal service request: {} → {}", requestId, serviceName, path);
+            log.info("🔧 [{}] INTERNAL SERVICE DETECTED: {} → {}", requestId, serviceName, path);
 
             // Enriquecer headers para servicios downstream
             ServerHttpRequest.Builder requestBuilder = exchange.getRequest().mutate();
@@ -54,11 +69,15 @@ public class InternalServiceFilter implements GlobalFilter, Ordered {
             // IMPORTANTE: No pasar por el filtro JWT
             exchange.getAttributes().put("SKIP_JWT_FILTER", true);
 
+            log.info("🔧 [{}] SKIP_JWT_FILTER set to true", requestId);
+
             ServerWebExchange modifiedExchange = exchange.mutate()
                     .request(requestBuilder.build())
                     .build();
 
             return chain.filter(modifiedExchange);
+        } else {
+            log.info("⚠️ [{}] NOT an internal service request, continuing with normal flow", requestId);
         }
 
         // Continuar con flujo normal (pasará por filtro JWT)
