@@ -72,7 +72,7 @@ spring:
         # OAuth2 Routes - DIRECT to Auth Service (NO JWT filter)
         # ===========================================
         - id: oauth2-authorization
-          uri: ${ORION_AUTH_URL:http://orion-auth:8091}
+          uri: ${ORION_AUTH_URL:http://orion-auth:8090}
           predicates:
             - Path=/oauth2/authorization/**
           filters:
@@ -81,7 +81,7 @@ spring:
             - AddRequestHeader=X-Gateway-Validated, true
 
         - id: oauth2-callback
-          uri: ${ORION_AUTH_URL:http://orion-auth:8091}
+          uri: ${ORION_AUTH_URL:http://orion-auth:8090}
           predicates:
             - Path=/login/oauth2/code/**
           filters:
@@ -130,7 +130,7 @@ spring:
 
         # Other auth routes (with JWT validation)
         - id: auth-service-general
-          uri: ${ORION_AUTH_URL:http://orion-auth:8091}
+          uri: ${ORION_AUTH_URL:http://orion-auth:8090}
           predicates:
             - Path=/api/auth/**
           filters:
@@ -266,7 +266,7 @@ gateway:
 auth:
   service:
     validation:
-      url: ${ORION_AUTH_URL:http://orion-auth:8091}/auth/validate
+      url: ${ORION_AUTH_URL:http://orion-auth:8090}/auth/validate
 
 # Logging
 logging:
