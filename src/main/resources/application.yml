@@ -1,16 +1,16 @@
 # ===========================================
-# ORION GATEWAY SERVICE - FIXED OAuth2 Configuration
+# ORION GATEWAY SERVICE - application.yml (dev/docker)
 # ===========================================
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${GATEWAY_PORT:8080}
 
 spring:
   application:
     name: ${GATEWAY_NAME:orion-gateway}
 
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
+    active: ${SPRING_PROFILES_ACTIVE:docker}
 
   cloud:
     consul:
@@ -19,19 +19,94 @@ spring:
         enabled: false
 
     loadbalancer:
-      configurations:
-        default:
-          health-check:
-            enabled: true
-            interval: 30s
+      retry:
+        enabled: true
 
     gateway:
+      # ---------------------------
+      # RUTAS
+      # ---------------------------
       routes:
-        # =======================================
-        # RUTAS INTERNAS SIN AUTENTICACIÓN
-        # =======================================
 
-        # Ruta específica para búsqueda de usuarios por email (INTERNO)
+        # ==========================
+        # OAuth2 (redir & callback) -> va directo al Auth (sin JWT)
+        # ==========================
+        - id: oauth2-authorization
+          uri: ${ORION_AUTH_URL:http://orion-auth:8091}
+          predicates:
+            - Path=/oauth2/authorization/**
+          filters:
+            - RewritePath=/oauth2/authorization(?<segment>.*), /oauth2/authorization$\{segment}
+            - AddRequestHeader=X-Skip-Auth, true
+            - AddRequestHeader=X-Gateway-Validated, true
+
+        - id: oauth2-callback
+          uri: ${ORION_AUTH_URL:http://orion-auth:8091}
+          predicates:
+            - Path=/login/oauth2/code/**
+          filters:
+            - RewritePath=/login/oauth2/code(?<segment>.*), /login/oauth2/code$\{segment}
+            - AddRequestHeader=X-Skip-Auth, true
+            - AddRequestHeader=X-Gateway-Validated, true
+
+        # ==========================
+        # Auth Service (algunas rutas sin JWT para bootstrap del login)
+        # ==========================
+        - id: auth-login
+          uri: ${ORION_AUTH_URL:http://orion-auth:8091}
+          predicates:
+            - Path=/api/auth/login
+          filters:
+            - RewritePath=/api/auth/login, /auth/login
+            - AddRequestHeader=X-Skip-Auth, true
+            - AddRequestHeader=X-Gateway-Validated, true
+
+        - id: auth-validate
+          uri: ${ORION_AUTH_URL:http://orion-auth:8091}
+          predicates:
+            - Path=/api/auth/validate
+          filters:
+            - RewritePath=/api/auth/validate, /auth/validate
+            - AddRequestHeader=X-Skip-Auth, true
+            - AddRequestHeader=X-Gateway-Validated, true
+
+        - id: auth-jwks
+          uri: ${ORION_AUTH_URL:http://orion-auth:8091}
+          predicates:
+            - Path=/api/auth/jwks
+          filters:
+            - RewritePath=/api/auth/jwks, /auth/jwks
+            - AddRequestHeader=X-Skip-Auth, true
+            - AddRequestHeader=X-Gateway-Validated, true
+
+        - id: auth-me
+          uri: ${ORION_AUTH_URL:http://orion-auth:8091}
+          predicates:
+            - Path=/api/auth/me
+          filters:
+            - RewritePath=/api/auth/me, /auth/me
+            - AddRequestHeader=X-Skip-Auth, true
+            - AddRequestHeader=X-Gateway-Validated, true
+
+        # Otras rutas de auth con CB (si las usas)
+        - id: auth-service-general
+          uri: ${ORION_AUTH_URL:http://orion-auth:8091}
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - RewritePath=/api/auth(?<segment>.*), /auth$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: auth-service-cb
+                fallbackUri: forward:/fallback/auth
+
+        # ==========================
+        # Rutas internas SIN autenticación (solo si viene desde otro microservicio)
+        # Reglas: require Header X-Service-Request: true
+        #         y agregamos X-Internal-Request para trazabilidad
+        # ==========================
+
+        # Buscar usuario por email (interno)
         - id: internal-user-auth-email
           uri: ${ORION_USER_URL:http://orion-user:8092}
           predicates:
@@ -43,7 +118,7 @@ spring:
             - AddRequestHeader=X-Gateway-Validated, true
             - AddRequestHeader=X-Internal-Request, true
 
-        # Ruta específica para búsqueda de programas por nombre (INTERNO)
+        # Program by name (interno)
         - id: internal-program-by-name
           uri: ${ORION_PROGRAM_URL:http://orion-program:8093}
           predicates:
@@ -55,7 +130,7 @@ spring:
             - AddRequestHeader=X-Gateway-Validated, true
             - AddRequestHeader=X-Internal-Request, true
 
-        # Ruta específica para crear programas (INTERNO)
+        # Crear programa (interno)
         - id: internal-program-create
           uri: ${ORION_PROGRAM_URL:http://orion-program:8093}
           predicates:
@@ -68,81 +143,9 @@ spring:
             - AddRequestHeader=X-Gateway-Validated, true
             - AddRequestHeader=X-Internal-Request, true
 
-        # ===========================================
-        # OAuth2 Routes - DIRECT to Auth Service (NO JWT filter)
-        # ===========================================
-        - id: oauth2-authorization
-          uri: ${ORION_AUTH_URL:http://orion-auth:8090}
-          predicates:
-            - Path=/oauth2/authorization/**
-          filters:
-            - RewritePath=/oauth2/authorization(?<segment>.*), /oauth2/authorization$\{segment}
-            - AddRequestHeader=X-Skip-Auth, true
-            - AddRequestHeader=X-Gateway-Validated, true
-
-        - id: oauth2-callback
-          uri: ${ORION_AUTH_URL:http://orion-auth:8090}
-          predicates:
-            - Path=/login/oauth2/code/**
-          filters:
-            - RewritePath=/login/oauth2/code(?<segment>.*), /login/oauth2/code$\{segment}
-            - AddRequestHeader=X-Skip-Auth, true
-            - AddRequestHeader=X-Gateway-Validated, true
-
-        # ===========================================
-        # Auth Service Routes - SOME bypass JWT
-        # ===========================================
-        - id: auth-login
-          uri: ${ORION_AUTH_URL:http://orion-auth:8090}
-          predicates:
-            - Path=/api/auth/login
-          filters:
-            - RewritePath=/api/auth/login, /auth/login
-            - AddRequestHeader=X-Skip-Auth, true
-            - AddRequestHeader=X-Gateway-Validated, true
-
-        - id: auth-validate
-          uri: ${ORION_AUTH_URL:http://orion-auth:8090}
-          predicates:
-            - Path=/api/auth/validate
-          filters:
-            - RewritePath=/api/auth/validate, /auth/validate
-            - AddRequestHeader=X-Skip-Auth, true
-            - AddRequestHeader=X-Gateway-Validated, true
-
-        - id: auth-jwks
-          uri: ${ORION_AUTH_URL:http://orion-auth:8090}
-          predicates:
-            - Path=/api/auth/jwks
-          filters:
-            - RewritePath=/api/auth/jwks, /auth/jwks
-            - AddRequestHeader=X-Skip-Auth, true
-            - AddRequestHeader=X-Gateway-Validated, true
-
-        - id: auth-me
-          uri: ${ORION_AUTH_URL:http://orion-auth:8090}
-          predicates:
-            - Path=/api/auth/me
-          filters:
-            - RewritePath=/api/auth/me, /auth/me
-            - AddRequestHeader=X-Skip-Auth, true
-            - AddRequestHeader=X-Gateway-Validated, true
-
-        # Other auth routes (with JWT validation)
-        - id: auth-service-general
-          uri: ${ORION_AUTH_URL:http://orion-auth:8090}
-          predicates:
-            - Path=/api/auth/**
-          filters:
-            - RewritePath=/api/auth(?<segment>.*), /auth$\{segment}
-            - name: CircuitBreaker
-              args:
-                name: auth-service-cb
-                fallbackUri: forward:/fallback/auth
-
-        # ===========================================
-        # User Service Routes
-        # ===========================================
+        # ==========================
+        # User / Role públicos (pasan por Gateway con CB)
+        # ==========================
         - id: user-service-lb
           uri: ${ORION_USER_URL:http://orion-user:8092}
           predicates:
@@ -167,9 +170,9 @@ spring:
                 name: role-service-cb
                 fallbackUri: forward:/fallback/user
 
-        # ===========================================
-        # Program Service Routes
-        # ===========================================
+        # ==========================
+        # Program públicos
+        # ==========================
         - id: program-service-lb
           uri: ${ORION_PROGRAM_URL:http://orion-program:8093}
           predicates:
@@ -182,48 +185,45 @@ spring:
                 name: program-service-cb
                 fallbackUri: forward:/fallback/program
 
-        # ===========================================
-        # Health & Actuator Routes
-        # ===========================================
+        # ==========================
+        # Health
+        # ==========================
         - id: health-check
-          uri: http://localhost:${SERVER_PORT:8080}
+          uri: http://localhost:${GATEWAY_PORT:8080}
           predicates:
             - Path=/health
           filters:
             - SetPath=/actuator/health
 
         - id: actuator-health
-          uri: http://localhost:${SERVER_PORT:8080}
+          uri: http://localhost:${GATEWAY_PORT:8080}
           predicates:
             - Path=/actuator/health
           filters:
             - AddRequestHeader=X-Skip-Auth, true
 
-      # CORS Configuration
+      # ---------------------------
+      # CORS (desde tu .env.dev)
+      # ---------------------------
       globalcors:
         cors-configurations:
           '[/**]':
-            allowed-origin-patterns:
-              - "http://localhost:*"
-              - "http://127.0.0.1:*"
-              - "https://*.vercel.app"
-            allowed-methods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-              - PATCH
+            allowed-origin-patterns: ${CORS_ALLOWED_ORIGINS_DEV:http://localhost:*}
+            allowed-methods: [GET, POST, PUT, DELETE, OPTIONS, PATCH]
             allowed-headers: "*"
             allow-credentials: true
             max-age: 3600
 
-      # Default filters - IMPORTANT: No JWT filter here
+      # ---------------------------
+      # Filtros por defecto
+      # ---------------------------
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
         - AddResponseHeader=X-Gateway-Service, ${GATEWAY_NAME:orion-gateway}
 
-# Circuit Breaker Configuration
+# ==========================
+# Circuit Breakers
+# ==========================
 resilience4j:
   circuitbreaker:
     configs:
@@ -241,37 +241,39 @@ resilience4j:
       program-service-cb:
         base-config: default
 
+# ==========================
 # Management
+# ==========================
 management:
   endpoints:
     web:
+      base-path: /actuator
       exposure:
         include: health,info,gateway,metrics,circuitbreakers
-      base-path: /actuator
   endpoint:
     health:
       show-details: always
 
-# Internal Service Communication
+# ==========================
+# Comunicación interna
+# ==========================
 gateway:
   service:
-    token: ${GATEWAY_SERVICE_TOKEN:auth-service-token-secure-2025}
+    token: ${GATEWAY_SERVICE_TOKEN:dev-token}
   internal:
-    services:
-      - orion-auth
-      - orion-user
-      - orion-program
+    services: [orion-auth, orion-user, orion-program]
 
-# Authentication Service Configuration
 auth:
   service:
     validation:
-      url: ${ORION_AUTH_URL:http://orion-auth:8090}/auth/validate
+      url: ${ORION_AUTH_URL:http://orion-auth:8091}/auth/validate
 
+# ==========================
 # Logging
+# ==========================
 logging:
   level:
-    com.unibague.gradework: DEBUG
+    root: ${LOGGING_LEVEL:INFO}
     org.springframework.cloud.gateway: INFO
     org.springframework.cloud.loadbalancer: DEBUG
-    root: INFO
+    com.unibague.gradework: ${LOG_LEVEL_GATEWAY:DEBUG}
