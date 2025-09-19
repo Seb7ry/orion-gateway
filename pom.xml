@@ -64,14 +64,6 @@
 		<!-- ===========================================
 		     SERVICE DISCOVERY DEPENDENCIES
 		     =========================================== -->
-		
-		<!-- Consul Service Discovery - Optional for dynamic service registration -->
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-consul-discovery</artifactId>
-			<optional>true</optional>
-		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
