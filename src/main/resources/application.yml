@@ -36,7 +36,7 @@ spring:
       # ---------------------------
       routes:
 
-        # ==========================
+         # ==========================
         # OAuth2 (redir & callback) -> va directo al Auth (sin JWT)
         # ==========================
         - id: oauth2-authorization
@@ -58,7 +58,7 @@ spring:
             - AddRequestHeader=X-Gateway-Validated, true
 
         # ==========================
-        # Auth Service (algunas rutas sin JWT para bootstrap del login)
+        # Auth Service (bootstrap del login sin JWT)
         # ==========================
         - id: auth-login
           uri: ${ORION_AUTH_URL:http://orion-auth:8091}
@@ -96,7 +96,7 @@ spring:
             - AddRequestHeader=X-Skip-Auth, true
             - AddRequestHeader=X-Gateway-Validated, true
 
-        # Otras rutas de auth con CB (si las usas)
+        # Otras rutas de auth con Circuit Breaker
         - id: auth-service-general
           uri: ${ORION_AUTH_URL:http://orion-auth:8091}
           predicates:
@@ -109,9 +109,7 @@ spring:
                 fallbackUri: forward:/fallback/auth
 
         # ==========================
-        # Rutas internas SIN autenticación (solo si viene desde otro microservicio)
-        # Reglas: require Header X-Service-Request: true
-        #         y agregamos X-Internal-Request para trazabilidad
+        # Rutas internas (S2S) — SIN JWT solo si el filtro interno valida
         # ==========================
 
         # Buscar usuario por email (interno)
@@ -122,7 +120,6 @@ spring:
             - Header=X-Service-Request, true
           filters:
             - RewritePath=/api/users/auth/email(?<segment>.*), /service/user/auth/email$\{segment}
-            - AddRequestHeader=X-Skip-Auth, true
             - AddRequestHeader=X-Gateway-Validated, true
             - AddRequestHeader=X-Internal-Request, true
 
@@ -134,7 +131,6 @@ spring:
             - Header=X-Service-Request, true
           filters:
             - RewritePath=/api/programs/name(?<segment>.*), /service/program/name$\{segment}
-            - AddRequestHeader=X-Skip-Auth, true
             - AddRequestHeader=X-Gateway-Validated, true
             - AddRequestHeader=X-Internal-Request, true
 
@@ -147,13 +143,35 @@ spring:
             - Header=X-Service-Request, true
           filters:
             - RewritePath=/api/programs, /service/program
-            - AddRequestHeader=X-Skip-Auth, true
             - AddRequestHeader=X-Gateway-Validated, true
             - AddRequestHeader=X-Internal-Request, true
 
         # ==========================
-        # User / Role públicos (pasan por Gateway con CB)
+        # User / Role públicos (con Circuit Breaker)
         # ==========================
+        - id: internal-user-create-student
+          uri: ${ORION_USER_URL:http://orion-user:8092}
+          predicates:
+            - Path=/api/users/student
+            - Method=POST
+            - Header=X-Service-Request, true
+          filters:
+            - RewritePath=/api/users/student, /service/user/student
+            - AddRequestHeader=X-Gateway-Validated, true
+            - AddRequestHeader=X-Internal-Request, true
+
+      # Crear actor (S2S)
+        - id: internal-user-create-actor
+          uri: ${ORION_USER_URL:http://orion-user:8092}
+          predicates:
+            - Path=/api/users/actor
+            - Method=POST
+            - Header=X-Service-Request, true
+          filters:
+            - RewritePath=/api/users/actor, /service/user/actor
+            - AddRequestHeader=X-Gateway-Validated, true
+            - AddRequestHeader=X-Internal-Request, true
+
         - id: user-service-lb
           uri: ${ORION_USER_URL:http://orion-user:8092}
           predicates:
@@ -165,6 +183,30 @@ spring:
               args:
                 name: user-service-cb
                 fallbackUri: forward:/fallback/user
+
+        # ==========================
+        # Role (interno)
+        # ==========================
+        - id: internal-role-by-name
+          uri: ${ORION_USER_URL:http://orion-user:8092}
+          predicates:
+            - Path=/api/roles/name/**
+            - Header=X-Service-Request, true
+          filters:
+            - RewritePath=/api/roles/name(?<segment>.*), /service/role/name$\{segment}
+            - AddRequestHeader=X-Gateway-Validated, true
+            - AddRequestHeader=X-Internal-Request, true
+
+        - id: internal-role-create
+          uri: ${ORION_USER_URL:http://orion-user:8092}
+          predicates:
+            - Path=/api/roles
+            - Method=POST
+            - Header=X-Service-Request, true
+          filters:
+            - RewritePath=/api/roles, /service/role
+            - AddRequestHeader=X-Gateway-Validated, true
+            - AddRequestHeader=X-Internal-Request, true
 
         - id: role-service-lb
           uri: ${ORION_USER_URL:http://orion-user:8092}
@@ -179,7 +221,7 @@ spring:
                 fallbackUri: forward:/fallback/user
 
         # ==========================
-        # Program públicos
+        # Program públicos (con Circuit Breaker)
         # ==========================
         - id: program-service-lb
           uri: ${ORION_PROGRAM_URL:http://orion-program:8093}
@@ -194,7 +236,7 @@ spring:
                 fallbackUri: forward:/fallback/program
 
         # ==========================
-        # Health
+        # Health (bypass OK)
         # ==========================
         - id: health-check
           uri: http://localhost:${GATEWAY_PORT:8080}
@@ -267,7 +309,7 @@ management:
 # ==========================
 gateway:
   service:
-    token: ${GATEWAY_SERVICE_TOKEN:dev-token}
+    token: ${GATEWAY_SERVICE_TOKEN:dev-token-unibague-orion}
   internal:
     services: [orion-auth, orion-user, orion-program]
 

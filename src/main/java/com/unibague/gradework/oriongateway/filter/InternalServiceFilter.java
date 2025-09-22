@@ -8,6 +8,8 @@ import org.springframework.core.Ordered;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+
+import jakarta.annotation.PostConstruct;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -20,7 +22,7 @@ import java.util.List;
 @Component
 public class InternalServiceFilter implements GlobalFilter, Ordered {
 
-    @Value("${gateway.service.token:auth-service-token-secure-2025}")
+    @Value("${gateway.service.token:${GATEWAY_SERVICE_TOKEN:dev-token-unibague-orion}}")
     private String validServiceToken;
 
     // Servicios internos confiables
@@ -109,11 +111,25 @@ public class InternalServiceFilter implements GlobalFilter, Ordered {
         return true;
     }
 
+    @PostConstruct
+    public void logToken() {
+        int len = validServiceToken == null ? 0 : validServiceToken.length();
+        String shown;
+        if (len == 0) {
+            shown = "null";
+        } else if (len <= 8) {
+            shown = validServiceToken; // si es muy corto, muéstralo tal cual
+        } else {
+            shown = validServiceToken.substring(0, 4) + "…" + validServiceToken.substring(len - 4);
+        }
+        log.info("🔑 Gateway token cargado (len={}): {}", len, shown);
+    }
+
     /**
      * Ejecutar ANTES del filtro JWT (orden más alto)
      */
     @Override
     public int getOrder() {
-        return Ordered.HIGHEST_PRECEDENCE + 50;
+        return Ordered.HIGHEST_PRECEDENCE;
     }
 }
